@@ -14,7 +14,6 @@ func Obfuscate(inputFileName, outputFileName string) error {
 	}
 	defer imageFile.Close()
 
-	println(inputFileName)
 	image, _, err := stdimage.Decode(imageFile)
 	if err != nil {
 		return err
