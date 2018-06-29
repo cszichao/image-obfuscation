@@ -7,22 +7,38 @@ import (
 	"sync"
 
 	"github.com/cpmech/gosl/fun/fftw"
+	"v2ray.com/core/common/errors"
 )
 
 // Image image class with FFT / DFT ability
 type Image struct {
-	rgbPlan2d [3]*fftw.Plan2d
+	rgbPlan2d      [3]*fftw.Plan2d
+	rgbPlan2dFreed bool
 	sync.RWMutex
 	image.Image
 }
 
 const maxUint = math.MaxUint16
 
+// Destory release memory handled by FFTW
+func (m *Image) Destory() {
+	m.Lock()
+	defer m.Unlock()
+
+	for order := range m.rgbPlan2d {
+		if m.rgbPlan2d[order] != nil && !m.rgbPlan2dFreed {
+			m.rgbPlan2d[order].Free()
+			m.rgbPlan2d[order] = nil
+		}
+	}
+	m.rgbPlan2dFreed = true
+}
+
 // FFT do FFT on image
 func (m *Image) FFT(force bool) {
 	m.Lock()
 	defer m.Unlock()
-	if !force && m.rgbPlan2d[0] != nil {
+	if !m.rgbPlan2dFreed && !force && m.rgbPlan2d[0] != nil {
 		return
 	}
 
@@ -55,6 +71,26 @@ func (m *Image) FFT(force bool) {
 		m.rgbPlan2d[colorOrder] = fftw.NewPlan2d(lenX, lenY, imgColorData, false, true)
 		m.rgbPlan2d[colorOrder].Execute()
 	}
+}
+
+// ErrFFTHasNotPerformed returned when FFT get/set when FFT haven't performed
+var ErrFFTHasNotPerformed = errors.New("FFT of this image haven't performed")
+
+// GetFFT get a color order's [x,y] FFT value
+func (m *Image) GetFFT(order, x, y int) (complex128, error) {
+	if m.rgbPlan2d[order] != nil {
+		return m.rgbPlan2d[order].Get(x, y), nil
+	}
+	return 0, ErrFFTHasNotPerformed
+}
+
+// SetFFT set a color order's [x,y] FFT value
+func (m *Image) SetFFT(order, x, y int, v complex128) error {
+	if m.rgbPlan2d[order] != nil {
+		m.rgbPlan2d[order].Set(x, y, v)
+		return nil
+	}
+	return ErrFFTHasNotPerformed
 }
 
 // IFFT do inverse FFT
