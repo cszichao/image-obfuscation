@@ -14,12 +14,18 @@ import (
 	"v2ray.com/core/common/errors"
 )
 
-type imageType int
+// ImageType image type
+type ImageType int
 
 const (
-	imageTypePNG imageType = iota
-	imageTypeJPG
-	imageTypeGIF
+	// ImageTypePNG png
+	ImageTypePNG ImageType = iota
+	// ImageTypeJPG jpeg
+	ImageTypeJPG
+	// ImageTypeGIF gif
+	ImageTypeGIF
+	// ImageTypeNotSupported not supported
+	ImageTypeNotSupported
 )
 
 // ErrImageNotSupported image not supportted
@@ -29,19 +35,19 @@ var ErrImageNotSupported = errors.New("image type not supported")
 var ErrAnimatedImageNotSupported = errors.New("animated image not supported")
 
 // Obfuscate makes image obfuscation on inputFileName to outputFileName
-func Obfuscate(inputFileName, outputFileName string) error {
-	var imgType imageType
+func Obfuscate(inputFileName, outputFileName string) (ImageType, error) {
+	var imgType ImageType
 	switch strings.ToLower(path.Ext(inputFileName)) {
 	case ".png":
-		imgType = imageTypePNG
+		imgType = ImageTypePNG
 	case ".jpg":
 		fallthrough
 	case ".jpeg":
-		imgType = imageTypeJPG
+		imgType = ImageTypeJPG
 	case ".gif":
-		imgType = imageTypeGIF
+		imgType = ImageTypeGIF
 	default:
-		return ErrImageNotSupported
+		return ImageTypeNotSupported, ErrImageNotSupported
 	}
 	image, err := func() (stdimage.Image, error) {
 		imageFile, err := os.Open(inputFileName)
@@ -51,11 +57,11 @@ func Obfuscate(inputFileName, outputFileName string) error {
 		defer imageFile.Close()
 		var image stdimage.Image
 		switch imgType {
-		case imageTypePNG:
+		case ImageTypePNG:
 			image, err = png.Decode(imageFile)
-		case imageTypeJPG:
+		case ImageTypeJPG:
 			image, err = jpeg.Decode(imageFile)
-		case imageTypeGIF:
+		case ImageTypeGIF:
 			gifs, err2 := gif.DecodeAll(imageFile)
 			if err2 != nil {
 				err = err2
@@ -64,7 +70,6 @@ func Obfuscate(inputFileName, outputFileName string) error {
 			} else {
 				image = gifs.Image[0]
 			}
-
 		}
 
 		if err != nil {
@@ -73,7 +78,7 @@ func Obfuscate(inputFileName, outputFileName string) error {
 		return image, err
 	}()
 	if err != nil {
-		return err
+		return imgType, err
 	}
 
 	img := &Image{Image: image}
@@ -84,27 +89,31 @@ func Obfuscate(inputFileName, outputFileName string) error {
 	lenY, lenX := max.Y-min.Y, max.X-min.X
 	rand.Seed(time.Now().UTC().UnixNano())
 	for colorOrder := 0; colorOrder < 3; colorOrder++ {
-		for i := 0; i < 10000; i++ {
-			y := rand.Intn(lenY)
-			x := rand.Intn(lenX)
+		maxObsPoints := 10000
+		if lenX*lenY/4 < maxObsPoints {
+			maxObsPoints = lenX * lenY / 4
+		}
+		for i := 0; i < maxObsPoints; i++ {
+			y := lenY/4 + rand.Intn(lenY/2)
+			x := lenX/4 + rand.Intn(lenX/2)
 			v, _ := img.GetFFT(colorOrder, x, y)
-			img.SetFFT(colorOrder, x, y, complex(real(v)*1.001, imag(v)*1.001))
+			img.SetFFT(colorOrder, x, y, complex(real(v)*1.0001, imag(v)*1.0001))
 		}
 	}
 	newimage := img.IFFT()
 
 	outfile, err := os.Create(outputFileName)
 	if err != nil {
-		return err
+		return imgType, err
 	}
 	defer outfile.Close()
 	switch imgType {
-	case imageTypePNG:
-		return png.Encode(outfile, newimage.Image)
-	case imageTypeJPG:
-		return jpeg.Encode(outfile, newimage.Image, &jpeg.Options{Quality: 75})
-	case imageTypeGIF:
-		return gif.Encode(outfile, newimage.Image, &gif.Options{NumColors: 256})
+	case ImageTypePNG:
+		return imgType, png.Encode(outfile, newimage.Image)
+	case ImageTypeJPG:
+		return imgType, jpeg.Encode(outfile, newimage.Image, &jpeg.Options{Quality: 75})
+	case ImageTypeGIF:
+		return imgType, gif.Encode(outfile, newimage.Image, &gif.Options{NumColors: 256})
 	}
-	return nil
+	return imgType, nil
 }

@@ -68,7 +68,7 @@ func (m *Image) FFT(force bool) {
 			m.rgbPlan2d[colorOrder].Free()
 		}
 		// fft using fftw
-		m.rgbPlan2d[colorOrder] = fftw.NewPlan2d(lenX, lenY, imgColorData, false, true)
+		m.rgbPlan2d[colorOrder] = fftw.NewPlan2d(lenX, lenY, imgColorData, false, false)
 		m.rgbPlan2d[colorOrder].Execute()
 	}
 }
@@ -111,7 +111,7 @@ func (m *Image) IFFT() *Image {
 			fftComplexData[i] = m.rgbPlan2d[colorOrder].Get(i/lenY, i%lenY)
 		}
 		// make inverse FFT
-		ifftPlan := fftw.NewPlan2d(lenX, lenY, fftComplexData, true, true)
+		ifftPlan := fftw.NewPlan2d(lenX, lenY, fftComplexData, true, false)
 		ifftPlan.Execute()
 
 		// recover the image
