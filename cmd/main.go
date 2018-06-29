@@ -22,6 +22,15 @@ var (
 )
 
 func main() {
+	if _, err := exec.LookPath("pngquant"); err != nil {
+		fmt.Fprintln(os.Stderr, "pngquant not installed")
+		os.Exit(1)
+	}
+	if _, err := exec.LookPath("jpegoptim"); err != nil {
+		fmt.Fprintln(os.Stderr, "jpegoptim not installed")
+		os.Exit(1)
+	}
+
 	flag.Parse()
 	fi, err := os.Stat(*src)
 	if err != nil {
