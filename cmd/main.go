@@ -93,7 +93,7 @@ func processImages(images []string, threads int) {
 			for image := range processQueue {
 				// use process exec since FFTW isn't thread safe
 				// do NOT obfuscation.Obfuscate(image, image)
-				fmt.Println(exec.Command(os.Args[0], "-s", image, image).Run())
+				exec.Command(os.Args[0], "-s", image, image).Run()
 			}
 			wg.Done()
 		}()
