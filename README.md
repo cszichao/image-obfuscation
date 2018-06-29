@@ -7,4 +7,4 @@ image obfuscation by slightly changing the FFT amplitude
 * [pngquant](https://pngquant.org/)
 * [jpegoptim](http://freshmeat.sourceforge.net/projects/jpegoptim)
 
-just use `brew install ` on macOS to install them.
+just use `brew install fftw pngquant jpegoptim` on macOS to install them.
