@@ -12,4 +12,4 @@ just use `brew install fftw pngquant jpegoptim` on macOS to install them.
 
 ## download
 
-Download the pre-compiled released on macOS [here](https://github.com/cszichao/image-obfuscation/releases/download/v0.10/obfuscation-darwin-amd64).
+Download the pre-compiled released on macOS [here](https://github.com/cszichao/image-obfuscation/releases/download/v0.11/obfuscation-v0.11-darwin-amd64).
