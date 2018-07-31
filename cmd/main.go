@@ -17,8 +17,9 @@ import (
 )
 
 var (
-	src      = flag.String("s", "", "image or folder to be obfuscated")
-	parallel = flag.Int("t", 10, "max runing threads")
+	src        = flag.String("s", "", "image or folder to be obfuscated")
+	parallel   = flag.Int("t", 10, "max runing threads")
+	skipPNGOpt = flag.Bool("k", false, "skip png optimization")
 )
 
 func main() {
@@ -57,8 +58,9 @@ func main() {
 		}
 		processImages(imageFiles, *parallel)
 	case mode.IsRegular():
+		fmt.Println("Processing", *src)
 		rand.Seed(time.Now().UTC().UnixNano())
-		if strings.ToLower(path.Ext(*src)) == ".png" {
+		if !*skipPNGOpt && strings.ToLower(path.Ext(*src)) == ".png" {
 			exec.Command("pngquant", "--strip", "--skip-if-larger", "--ext=.png", "--force", *src).Run()
 		}
 		imgType, err := obfuscation.Obfuscate(*src, *src)
@@ -93,6 +95,7 @@ func processImages(images []string, threads int) {
 			for image := range processQueue {
 				// use process exec since FFTW isn't thread safe
 				// do NOT obfuscation.Obfuscate(image, image)
+				fmt.Println("Processing", image)
 				exec.Command(os.Args[0], "-s", image, image).Run()
 			}
 			wg.Done()
