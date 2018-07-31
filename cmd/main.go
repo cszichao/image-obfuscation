@@ -70,8 +70,11 @@ func main() {
 		}
 		if fi.Size() > 64*1024 { // only shrink images over 64k
 			if imgType == obfuscation.ImageTypePNG {
-				exec.Command("pngquant", "--strip", "--skip-if-larger",
-					"--ext=.png", "--force", "--quality", "0-"+strconv.Itoa(90+rand.Intn(10)), *src).Run()
+				if !*skipPNGOpt {
+					exec.Command("pngquant", "--strip", "--skip-if-larger",
+						"--ext=.png", "--force", "--quality",
+						"0-"+strconv.Itoa(90+rand.Intn(10)), *src).Run()
+				}
 			} else if imgType == obfuscation.ImageTypeJPG {
 				exec.Command("jpegoptim", "--strip", "-m", strconv.Itoa(80+rand.Intn(20)), *src).Run()
 			}
